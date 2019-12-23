@@ -1,0 +1,119 @@
+<aura:component controller="JOMV_ImportSiteRef_Controller" implements="lightning:isUrlAddressable" access="global" >
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>  
+    <aura:attribute name="user" type="sObject" access="global"/>
+    <aura:attribute name="siteReferences" type="List" access="global"/>
+    <aura:attribute type="String[]" name="headers" />
+    <aura:attribute type="List" name="data" />
+    <aura:attribute type="Boolean" name="fileTypeError" default="false" />
+    <aura:attribute name="isDisabled" type="boolean" default="true" />
+    <aura:attribute name="isImportsuccess" type="boolean" default="false" />
+    <aura:attribute name="gridData" type="Object"/>
+    <aura:attribute name="importLabel" type="String" default="Import Site References Now" />
+    
+    <!-- create 2 aura handler with waiting and donewaiting events--> 
+    <aura:handler event="aura:waiting" action="{!c.showSpinner}"/>
+    <aura:handler event="aura:doneWaiting" action="{!c.hideSpinner}"/>
+    <!--create a component attributs -->
+    <aura:attribute name="Spinner" type="boolean" default="false"/>
+    
+    <!--loading spinner start... style=Brand Medium (blue dots)-->
+    <aura:if isTrue="{!v.Spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>
+    <!-- Loading spinner end-->
+    
+    <header class="slds-modal__header" style="background-color:#85C1E9;">                    
+        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+            <div class="slds-text-align_center slds-text-heading_large" style="font-weight:bold;">
+                <lightning:icon iconName="action:upload" size="large" alternativeText="Import Site Reference"/>
+                Import Site Reference
+            </div>
+        </h2>
+    </header>	
+    <lightning:card>
+        <br/><br/>
+        <div class="slds-align_absolute-center" style="font-style:bold;">
+            <div class="slds-text-heading_large"> Hi {!v.user.FirstName} ! <br/><br/></div>
+        </div>
+        
+        <div class="slds-align_absolute-center" style="font-style:bold;">
+            <div class="slds-text-heading_small">            
+                <p class="slds-text-heading_medium">
+                    Instructions<hr/>
+                </p>
+                1. Please select csv File only.  If you do not have sample file you can get it by 
+                <a href="javascript:void(0)" onclick="{!c.downloadSampleCSV}"> Clicking here.</a><br/>
+                2. Please use the same file to upload data to Site Reference.<br/>
+                3. Uniqueness of records is considered using Unique Key coloumn in csv.<br/>
+                4. If existing record have Unique key that matches in csv then existing record will be updated with values as in csv.<br/>
+                5. If existing record have Unique key that DO NOT matches in csv then new record will be created.<br/>
+                6. After Selecting file click on Upload and Preview button.<br/>
+                7. Click on Import Now button this will import records in Salesforce.<br/><hr/>
+            </div>
+        </div>
+        
+        <div class="slds-align_absolute-center" style="font-style:bold;">
+            <th><input type="file" class="file" aura:id="file" accept=".csv" /></th>
+            <th><lightning:button variant="brand" label="Upload and Preview" onclick="{! c.handleUpload }" /></th>
+            <br/><br/><br/>
+        </div>
+        <br/><br/>
+        <div class="slds-align_absolute-center" style="font-style:bold;">
+            <aura:if isTrue="{!v.isImportsuccess == true}">
+                <br/><br/><br/>
+                <div class="slds-text-heading_medium slds-align_absolute-center"> 
+                    <lightning:icon iconName="action:approval" size="large" alternativeText="Import Site Reference"/> 
+                    &nbsp; Data Import Success..! <br/>
+                    &nbsp; Kindly check email for more details. <br/>
+                    &nbsp; If you want to upload more records then please select another csv and upload the same.               
+                </div>
+                <br/>
+                <aura:set attribute="else">
+                    <aura:if isTrue="{!v.fileTypeError == true}">
+                        <div class="slds-text-heading_medium slds-align_absolute-center"> 
+                            Please select csv file..!
+                        </div>
+                        <aura:set attribute="else">                        
+                            <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                                <thead>
+                                    <!--th style="background-color:#85C1E9;color:white;font-weight:bold;text-align:center;" scope="col">No.</th-->
+                                    <aura:iteration items="{!v.headers}" var="h">
+                                        <th style="background-color:#85C1E9;color:white;font-weight:bold;text-align:center;" scope="col">
+                                            <div class=" slds-cell-wrap" style="height:40%;width:auto;" title="{!h}">{!h}</div>
+                                        </th>
+                                    </aura:iteration>
+                                </thead>
+                                <tbody>
+                                    <aura:iteration items="{!v.data}" var="row" indexVar="iv">
+                                        <tr class="slds-hint-parent">
+                                            <td>{!iv+1}</td>
+                                            <aura:iteration items="{!row}" var="cell">
+                                                <td>
+                                                    <div class="slds-truncate slds-cell-wrap" style="text-align:center;" title="{!cell}"> {!cell}</div>
+                                                </td>
+                                            </aura:iteration>
+                                        </tr>            
+                                    </aura:iteration>
+                                </tbody>
+                            </table>
+                            <br/><br/><br/><br/>
+                        </aura:set>
+                    </aura:if>
+                </aura:set>
+            </aura:if>
+            <lightning:spinner aura:id="csvSpinner" class="slds-hide" variant="brand" size="small"/>
+        </div>
+        <br/><br/><br/>
+    </lightning:card>
+    <div id="divFooter" class="footer">
+        <div class="slds-text-align_center " style="font-weight:bold;">
+            <lightning:button variant="brand" label="{!v.importLabel}" onclick="{! c.handleImport }"  disabled="{!v.isDisabled}" />         
+        </div>
+    </div>
+</aura:component>
